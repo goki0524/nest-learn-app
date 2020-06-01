@@ -29,15 +29,15 @@
     "@nestjs/typeorm": "^7.1.0",
     "@types/helmet": "^0.0.47",
     "@types/lodash": "^4.14.153",
-    "@types/uuid": "^8.0.0",
     "class-transformer": "^0.2.3",
     "class-validator": "^0.12.2",
     "helmet": "^3.22.0",
+    "pg": "^8.2.1",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
     "rxjs": "^6.5.4",
     "swagger-ui-express": "^4.1.4",
-    "uuid": "^8.1.0"
+    "typeorm": "^0.2.25"
   },
   "devDependencies": {
     "@nestjs/cli": "^7.0.0",
