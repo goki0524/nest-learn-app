@@ -13,7 +13,7 @@ export class UserRepositroy extends Repository<User> {
     user.username = username
     user.salt = await bcrypt.genSalt()
     user.password = await this.hashPassword(password, user.salt)
-    
+
     try {
       await user.save()
     } catch (error) {
@@ -30,7 +30,7 @@ export class UserRepositroy extends Repository<User> {
     const { username, password } = authCredentialsDto
     const user = await this.findOne({ username })
 
-    if (user && await user.validatePassword(password)) {
+    if (user && (await user.validatePassword(password))) {
       return user.username
     } else {
       return null
