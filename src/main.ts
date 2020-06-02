@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common'
 import { AppModule } from './app.module'
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import helmet from 'helmet'
+import config from 'config'
 
 async function bootstrap() {
   // Set up Logger
@@ -25,7 +26,7 @@ async function bootstrap() {
     SwaggerModule.setup('swagger', app, document)
   }
 
-  const port = 3000
+  const port: number = Number(process.env.PORT) || Number(config.get('server.port'))
   await app.listen(port)
   logger.log(`Application listenig on http://localhost:${port}/`)
 }
