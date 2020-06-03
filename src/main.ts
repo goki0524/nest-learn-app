@@ -12,6 +12,10 @@ async function bootstrap() {
   // Set up Nestjs
   const app = await NestFactory.create(AppModule)
 
+  if (process.env.ENV !== 'production') {
+    app.enableCors()
+  }
+
   // Set up helmet
   app.use(helmet())
 
