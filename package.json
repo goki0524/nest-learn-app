@@ -33,7 +33,7 @@
     "@types/helmet": "^0.0.47",
     "@types/lodash": "^4.14.153",
     "bcrypt": "^4.0.1",
-    "class-transformer": "^0.2.3",
+    "class-transformer": "^0.2.2",
     "class-validator": "^0.12.2",
     "config": "^3.3.1",
     "helmet": "^3.22.0",
