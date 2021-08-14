@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common'
 import { AuthController } from './auth.controller'
 import { AuthService } from './auth.service'
 import { TypeOrmModule } from '@nestjs/typeorm'
-import { UserRepositroy } from './user.repository'
+import { UserRepository } from './repositories/user.repository'
 import { JwtModule } from '@nestjs/jwt'
 import { PassportModule } from '@nestjs/passport'
 import { JwtStrategy } from './jwt.strategy'
@@ -17,7 +17,7 @@ import config from 'config'
         expiresIn: config.get('jwt.expiresIn'),
       },
     }),
-    TypeOrmModule.forFeature([UserRepositroy]),
+    TypeOrmModule.forFeature([UserRepository]),
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

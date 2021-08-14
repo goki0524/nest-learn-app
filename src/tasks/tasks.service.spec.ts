@@ -14,17 +14,13 @@ const mockTaskRepositroy = () => ({
   delete: jest.fn(),
 })
 
-
 describe('TasksService', () => {
   let tasksService
   let taskRepository
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      providers: [
-        TasksService,
-        { provide: TaskRepositroy, useFactory: mockTaskRepositroy }
-      ]
+      providers: [TasksService, { provide: TaskRepositroy, useFactory: mockTaskRepositroy }],
     }).compile()
 
     tasksService = await module.get<TasksService>(TasksService)
@@ -54,8 +50,8 @@ describe('TasksService', () => {
       expect(taskRepository.findOne).toHaveBeenCalledWith({
         where: {
           id: 1,
-          userId: mockUser.id
-        }
+          userId: mockUser.id,
+        },
       })
     })
 
@@ -107,12 +103,5 @@ describe('TasksService', () => {
       expect(save).toHaveBeenCalled()
       expect(result.status).toEqual(TaskStatus.DONE)
     })
-
   })
-
-
-
-
-
-
 })

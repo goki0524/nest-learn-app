@@ -5,6 +5,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger'
 import helmet from 'helmet'
 import config from 'config'
 
+const ENV = {
+  PROD: 'production',
+  STG: 'staging',
+  DEV: 'develop',
+}
+
 async function bootstrap() {
   // Set up Logger
   const logger = new Logger('bootstrap')
@@ -12,7 +18,7 @@ async function bootstrap() {
   // Set up Nestjs
   const app = await NestFactory.create(AppModule)
 
-  if (process.env.ENV !== 'production') {
+  if (process.env.ENV !== ENV.PROD) {
     app.enableCors()
   }
 
@@ -20,7 +26,7 @@ async function bootstrap() {
   app.use(helmet())
 
   // Set up Swagger
-  if (process.env.ENV !== 'production') {
+  if (process.env.ENV !== ENV.PROD) {
     const options = new DocumentBuilder()
       .setTitle('Nest.js learn app')
       .setDescription('Nest.js learn app description')

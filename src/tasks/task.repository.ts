@@ -3,7 +3,7 @@ import { Task } from './task.entity'
 import { CreateTaskDto } from './dto/create-task.dto'
 import { TaskStatus } from './task-status.enum'
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto'
-import { User } from 'src/auth/user.entity'
+import { User } from 'src/auth/entities/user.entity'
 import { Logger, InternalServerErrorException } from '@nestjs/common'
 
 @EntityRepository(Task)
@@ -23,6 +23,10 @@ export class TaskRepositroy extends Repository<Task> {
     if (search) {
       query.andWhere('(task.title LIKE :search OR task.description LIKE :search)', { search: `%${search}%` })
     }
+
+    console.log('============================')
+    console.log(query.getSql())
+    console.log('============================')
 
     try {
       const tasks = await query.getMany()
