@@ -1,0 +1,102 @@
+# Rynsec AI 自動修正ワークフロー（テンプレート）
+#
+# 対象リポジトリの .github/workflows/rynsec-autofix.yml として配置する。
+# Rynsec（ExecutorRun）が workflow_dispatch でこのワークフローを起動し、Claude Code が
+# 修正 PR を作成し、最後に Rynsec の完了コールバック（/api/runs/{run_id}/complete）へ
+# 作成した PR を報告する。Rynsec 側はその PR を自動採用・紐付けし、検証へ進む（[docs/10] §3 案1, §4 A）。
+#
+# 前提:
+#   - GitHub App に actions:write（dispatch）。
+#   - リポジトリ secret: ANTHROPIC_API_KEY（Claude Code 用）, RYNSEC_TOKEN（コールバック認証）。
+#   - Rynsec から渡す inputs は下記 contract に従う。
+
+name: Rynsec AI Autofix
+
+on:
+  workflow_dispatch:
+    inputs:
+      action_id:
+        description: Rynsec Action ID
+        required: true
+      run_id:
+        description: Rynsec Executor Run ID（コールバック先）
+        required: true
+      finding_summary:
+        description: 検出リスクの要約（タイトル/CVE 等）
+        required: false
+      package_name:
+        description: 対象パッケージ（依存脆弱性の場合）
+        required: false
+      fixed_version:
+        description: 修正バージョン（既知の場合）
+        required: false
+      fix_scope:
+        description: Fix Contract の許可スコープ（glob, カンマ区切り）
+        required: false
+        default: "**"
+      callback_base_url:
+        description: Rynsec API のベース URL
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  autofix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create fix branch
+        id: branch
+        run: |
+          BRANCH="rynsec/autofix-${{ inputs.action_id }}"
+          git switch -c "$BRANCH"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+
+      # Claude Code に「Fix Contract のスコープ内で、対象の脆弱性だけを修正する」よう指示する。
+      # 自由文の追加指示は渡さない（承認済みの最小コンテキストのみ）。[docs/05] §8.9。
+      - name: Claude Code remediation
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            次のセキュリティ検出リスクを修正してください。
+            - 概要: ${{ inputs.finding_summary }}
+            - パッケージ: ${{ inputs.package_name }}
+            - 修正バージョン: ${{ inputs.fixed_version }}
+            制約:
+            - 変更は次のスコープ内のみ: ${{ inputs.fix_scope }}
+            - 既存のテスト/CI/セキュリティ設定を無効化しない。
+            - 対象の脆弱性の解消に必要な最小限の変更に限定する。
+
+      - name: Commit & push
+        run: |
+          git add -A
+          git commit -m "fix(security): Rynsec autofix for action ${{ inputs.action_id }}" || echo "no changes"
+          git push origin "${{ steps.branch.outputs.branch }}"
+
+      - name: Open PR
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR_URL=$(gh pr create \
+            --title "Rynsec autofix: ${{ inputs.finding_summary }}" \
+            --body "Automated remediation by Claude Code via Rynsec. Action ${{ inputs.action_id }}." \
+            --head "${{ steps.branch.outputs.branch }}" \
+            --base "${{ github.event.repository.default_branch }}")
+          echo "number=$(gh pr view "$PR_URL" --json number -q .number)" >> "$GITHUB_OUTPUT"
+
+      # Rynsec へ完了コールバック。作成した PR を報告すると Rynsec が自動採用・紐付けする（[docs/10] A）。
+      - name: Callback to Rynsec
+        if: always()
+        run: |
+          SUCCEEDED=${{ job.status == 'success' }}
+          OWNER="${{ github.repository_owner }}"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          curl -sS -X POST "${{ inputs.callback_base_url }}/api/runs/${{ inputs.run_id }}/complete" \
+            -H "Authorization: Bearer ${{ secrets.RYNSEC_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"succeeded\": ${SUCCEEDED}, \"pullRequest\": {\"repositoryOwner\": \"${OWNER}\", \"repositoryName\": \"${REPO}\", \"prNumber\": ${{ steps.pr.outputs.number || 0 }}}}"
